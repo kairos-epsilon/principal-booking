@@ -4,9 +4,11 @@ import { prisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
 
-const HERO_IMAGE = 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=1600&q=80'
-const SALON_IMAGE = 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=800&q=80'
-const STAFF_BG   = 'https://images.unsplash.com/photo-1519014816548-bf5fe059798b?w=800&q=80'
+const HERO_IMAGE    = 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=1600&q=80'
+const STAFF_BG      = 'https://images.unsplash.com/photo-1519014816548-bf5fe059798b?w=800&q=80'
+const COLLAGE_TOP   = 'https://images.unsplash.com/photo-1519014816548-bf5fe059798b?w=600&q=80'
+const COLLAGE_BTM_L = 'https://images.unsplash.com/photo-1560869713-7d0a29430803?w=600&q=80'
+const COLLAGE_BTM_R = 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&q=80'
 
 export default async function HomePage() {
   const [menus, staff] = await Promise.all([
@@ -46,7 +48,6 @@ export default async function HomePage() {
           className="object-cover object-center"
           sizes="100vw"
         />
-        {/* Overlay */}
         <div className="absolute inset-0 bg-black/45" />
         <div className="relative z-10 px-4">
           <p className="text-rose-300 text-sm tracking-[0.3em] mb-4 uppercase">Nail Salon</p>
@@ -67,8 +68,9 @@ export default async function HomePage() {
       </section>
 
       {/* Salon intro banner */}
-      <section className="relative overflow-hidden">
+      <section className="overflow-hidden bg-white">
         <div className="max-w-5xl mx-auto px-4 py-16 flex flex-col md:flex-row items-center gap-10">
+          {/* Left: text */}
           <div className="flex-1">
             <p className="text-rose-600 text-xs tracking-widest mb-3 uppercase">About Principal</p>
             <h2 className="text-2xl font-bold text-stone-800 mb-4 leading-snug">
@@ -80,15 +82,40 @@ export default async function HomePage() {
               ご予約はオンラインで24時間受け付けています。
             </p>
           </div>
-          <div className="flex-1 relative w-full h-56 md:h-64 rounded-2xl overflow-hidden shadow-md">
-            <Image
-              src={SALON_IMAGE}
-              alt="サロンイメージ"
-              fill
-              className="object-cover object-center"
-              sizes="(max-width: 768px) 100vw, 50vw"
-            />
-            <div className="absolute inset-0 bg-rose-900/10" />
+
+          {/* Right: 3-image collage — top 1 large + bottom 2 small */}
+          <div className="flex-1 w-full flex flex-col gap-2">
+            {/* Top image — large */}
+            <div className="relative w-full h-48 rounded-xl overflow-hidden shadow-md">
+              <Image
+                src={COLLAGE_TOP}
+                alt="サロン内装"
+                fill
+                className="object-cover object-center"
+                sizes="(max-width: 768px) 100vw, 50vw"
+              />
+            </div>
+            {/* Bottom row — 2 images */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="relative h-32 rounded-xl overflow-hidden shadow-md">
+                <Image
+                  src={COLLAGE_BTM_L}
+                  alt="ネイルアート"
+                  fill
+                  className="object-cover object-center"
+                  sizes="(max-width: 768px) 50vw, 25vw"
+                />
+              </div>
+              <div className="relative h-32 rounded-xl overflow-hidden shadow-md">
+                <Image
+                  src={COLLAGE_BTM_R}
+                  alt="ビューティーケア"
+                  fill
+                  className="object-cover object-center"
+                  sizes="(max-width: 768px) 50vw, 25vw"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </section>
