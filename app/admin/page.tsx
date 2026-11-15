@@ -1,35 +1,14 @@
-import { prisma } from '@/lib/prisma'
+'use client'
+
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import * as store from '@/lib/demo-store'
 
-export const dynamic = 'force-dynamic'
-
-export default async function AdminDashboard() {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const tomorrow = new Date(today)
-  tomorrow.setDate(tomorrow.getDate() + 1)
-
-  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
-  const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 1)
-
-  const [todayBookings, monthBookings, totalCustomers, pendingCount] = await Promise.all([
-    prisma.booking.findMany({
-      where: { startAt: { gte: today, lt: tomorrow }, status: { not: 'CANCELLED' } },
-      include: { user: true, menu: true, staff: true },
-      orderBy: { startAt: 'asc' },
-    }),
-    prisma.booking.findMany({
-      where: {
-        startAt: { gte: monthStart, lt: monthEnd },
-        status: { in: ['CONFIRMED', 'COMPLETED'] },
-      },
-      include: { menu: true },
-    }),
-    prisma.user.count({ where: { role: 'CUSTOMER' } }),
-    prisma.booking.count({ where: { status: 'PENDING' } }),
-  ])
-
-  const monthRevenue = monthBookings.reduce((s, b) => s + b.menu.price, 0)
+export default function AdminDashboard() {
+  const [data, setData] = useState<ReturnType<typeof store.dashboard> | null>(null)
+  useEffect(() => { setData(store.dashboard()) }, [])
+  if (!data) return null
+  const { todayBookings, monthBookings, monthRevenue, totalCustomers, pendingCount } = data
 
   return (
     <div className="p-8">

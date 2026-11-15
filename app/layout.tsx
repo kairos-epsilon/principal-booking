@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Noto_Sans_JP } from 'next/font/google'
 import { Providers } from './providers'
+import { DemoBanner } from './demo-banner'
 import './globals.css'
 
 const notoSans = Noto_Sans_JP({
@@ -11,14 +12,17 @@ const notoSans = Noto_Sans_JP({
 
 export const metadata: Metadata = {
   title: 'Principal Nail Salon | 予約',
-  description: 'プリンシパル ネイルサロン オンライン予約',
+  description: 'プリンシパル ネイルサロン オンライン予約（ポートフォリオ用デモ）',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ja" className={`${notoSans.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-stone-50 font-sans text-stone-800">
-        <Providers>{children}</Providers>
+        <Providers>
+          <DemoBanner />
+          {children}
+        </Providers>
       </body>
     </html>
   )

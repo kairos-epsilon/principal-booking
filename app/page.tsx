@@ -1,8 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { prisma } from '@/lib/prisma'
-
-export const dynamic = 'force-dynamic'
+import { SEED_MENUS, SEED_STAFF } from '@/lib/demo-data'
 
 const HERO_IMAGE    = 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=1600&q=80'
 const STAFF_BG      = 'https://images.unsplash.com/photo-1519014816548-bf5fe059798b?w=800&q=80'
@@ -10,11 +8,9 @@ const COLLAGE_TOP   = 'https://images.unsplash.com/photo-1519014816548-bf5fe0597
 const COLLAGE_BTM_L = 'https://images.unsplash.com/photo-1560869713-7d0a29430803?w=600&q=80'
 const COLLAGE_BTM_R = 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&q=80'
 
-export default async function HomePage() {
-  const [menus, staff] = await Promise.all([
-    prisma.menu.findMany({ where: { isActive: true }, orderBy: { price: 'asc' } }),
-    prisma.staff.findMany({ where: { isActive: true } }),
-  ])
+export default function HomePage() {
+  const menus = [...SEED_MENUS].filter((m) => m.isActive).sort((a, b) => a.price - b.price)
+  const staff = SEED_STAFF.filter((s) => s.isActive)
 
   const categories = [...new Set(menus.map((m) => m.category))]
 

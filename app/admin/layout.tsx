@@ -1,7 +1,9 @@
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { redirect } from 'next/navigation'
+'use client'
+
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useDemoSession } from '@/lib/demo-session'
 
 const NAV = [
   { href: '/admin', label: 'ダッシュボード' },
@@ -11,12 +13,17 @@ const NAV = [
   { href: '/admin/sales', label: '売上管理' },
 ]
 
-export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const session = await getServerSession(authOptions)
-  const role = (session?.user as { role?: string } | undefined)?.role
-  if (!session || !['STAFF', 'OWNER'].includes(role ?? '')) {
-    redirect('/auth')
-  }
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const { data: session, status, logout } = useDemoSession()
+  const router = useRouter()
+  const role = session?.user.role
+  const allowed = !!session && ['STAFF', 'OWNER'].includes(role ?? '')
+
+  useEffect(() => {
+    if (status === 'unauthenticated' || (status === 'authenticated' && !allowed)) router.replace('/auth')
+  }, [status, allowed, router])
+
+  if (!allowed || !session) return null
 
   return (
     <div className="min-h-screen flex">
@@ -37,7 +44,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           ))}
         </nav>
         <div className="px-5 pb-5 text-xs text-stone-500">
-          {session.user?.name} ({role})
+          {session.user.name} ({role})
+          <button
+            onClick={() => { logout(); router.push('/') }}
+            className="block mt-2 underline hover:text-stone-300"
+          >
+            ログアウト
+          </button>
         </div>
       </aside>
 

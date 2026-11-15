@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import * as store from '@/lib/demo-store'
 
 type Booking = {
   id: string
@@ -29,25 +30,22 @@ const STATUS_COLOR: Record<string, string> = {
 
 export default function AdminBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([])
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+  const [date, setDate] = useState(() => {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  })
   const [loading, setLoading] = useState(false)
 
   const load = async () => {
     setLoading(true)
-    const res = await fetch(`/api/admin/bookings?date=${date}`)
-    const data = await res.json()
-    setBookings(Array.isArray(data) ? data : [])
+    setBookings(store.adminBookings(date) as unknown as Booking[])
     setLoading(false)
   }
 
   useEffect(() => { load() }, [date]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const updateStatus = async (id: string, status: string) => {
-    await fetch('/api/admin/bookings', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, status }),
-    })
+    store.setBookingStatus(id, status as 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED')
     setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status } : b)))
   }
 

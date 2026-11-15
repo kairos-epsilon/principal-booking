@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import * as store from '@/lib/demo-store'
 
 type Customer = {
   id: string
@@ -18,9 +19,8 @@ export default function AdminCustomersPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/api/admin/customers')
-      .then((r) => r.json())
-      .then((data) => { setCustomers(Array.isArray(data) ? data : []); setLoading(false) })
+    setCustomers(store.adminCustomers())
+    setLoading(false)
   }, [])
 
   const filtered = customers.filter(

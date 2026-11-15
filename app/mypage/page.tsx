@@ -1,6 +1,7 @@
 'use client'
 
-import { useSession, signOut } from 'next-auth/react'
+import { useDemoSession } from '@/lib/demo-session'
+import * as store from '@/lib/demo-store'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -30,7 +31,7 @@ const STATUS_COLOR: Record<string, string> = {
 }
 
 export default function MyPage() {
-  const { data: session, status } = useSession()
+  const { data: session, status, logout } = useDemoSession()
   const router = useRouter()
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
@@ -40,22 +41,15 @@ export default function MyPage() {
   }, [status, router])
 
   useEffect(() => {
-    if (status !== 'authenticated') return
-    fetch('/api/bookings')
-      .then((r) => r.json())
-      .then((data) => {
-        setBookings(Array.isArray(data) ? data : [])
-        setLoading(false)
-      })
-  }, [status])
+    if (status !== 'authenticated' || !session) return
+    setBookings(store.myBookings(session.user.id) as unknown as Booking[])
+    setLoading(false)
+  }, [status, session])
 
   const handleCancel = async (id: string) => {
     if (!confirm('キャンセルしますか？')) return
-    await fetch('/api/bookings', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, status: 'CANCELLED' }),
-    })
+    if (!session) return
+    store.setBookingStatus(id, 'CANCELLED', session.user.id)
     setBookings((prev) =>
       prev.map((b) => (b.id === id ? { ...b, status: 'CANCELLED' } : b))
     )
@@ -63,9 +57,9 @@ export default function MyPage() {
 
   if (status === 'loading' || loading) return null
 
-  const upcoming = bookings.filter(
-    (b) => b.status !== 'CANCELLED' && new Date(b.startAt) >= new Date()
-  )
+  const upcoming = bookings
+    .filter((b) => b.status !== 'CANCELLED' && new Date(b.startAt) >= new Date())
+    .sort((a, b) => a.startAt.localeCompare(b.startAt))
   const past = bookings.filter(
     (b) => b.status === 'CANCELLED' || new Date(b.startAt) < new Date()
   )
@@ -78,7 +72,7 @@ export default function MyPage() {
           <div className="flex items-center gap-3">
             <span className="text-sm text-stone-500">{session?.user?.name}</span>
             <button
-              onClick={() => signOut({ callbackUrl: '/' })}
+              onClick={() => { logout(); router.push('/') }}
               className="text-sm text-stone-400 hover:text-stone-600"
             >
               ログアウト

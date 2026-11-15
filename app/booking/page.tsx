@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
+import { useDemoSession } from '@/lib/demo-session'
+import * as store from '@/lib/demo-store'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
@@ -11,7 +12,7 @@ type Staff = { id: string; name: string; bio: string | null }
 const STEPS = ['メニュー', 'スタッフ', '日時', '確認', '完了']
 
 export default function BookingPage() {
-  const { data: session, status } = useSession()
+  const { data: session, status } = useDemoSession()
   const router = useRouter()
 
   const [step, setStep] = useState(0)
@@ -32,38 +33,34 @@ export default function BookingPage() {
   }, [status, router])
 
   useEffect(() => {
-    fetch('/api/menus').then((r) => r.json()).then(setMenus)
-    fetch('/api/staff').then((r) => r.json()).then(setStaffList)
+    setMenus(store.getMenus())
+    setStaffList(store.getStaff())
   }, [])
 
   useEffect(() => {
     if (!selectedDate || !selectedStaff || !selectedMenu) return
     setSlots([])
-    fetch(`/api/bookings/available?date=${selectedDate}&staffId=${selectedStaff.id}&duration=${selectedMenu.duration}`)
-      .then((r) => r.json())
-      .then(setSlots)
+    setSlots(store.availableSlots(selectedDate, selectedStaff.id, selectedMenu.duration))
   }, [selectedDate, selectedStaff, selectedMenu])
 
   const handleBooking = async () => {
-    if (!selectedMenu || !selectedStaff || !selectedSlot) return
+    if (!selectedMenu || !selectedStaff || !selectedSlot || !session) return
     setLoading(true)
     setError('')
-    const res = await fetch('/api/bookings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    try {
+      store.createBooking({
+        userId: session.user.id,
         menuId: selectedMenu.id,
         staffId: selectedStaff.id,
         startAt: selectedSlot,
         note,
-      }),
-    })
-    setLoading(false)
-    if (!res.ok) {
-      const data = await res.json()
-      setError(data.error ?? '予約に失敗しました')
+      })
+    } catch (err) {
+      setLoading(false)
+      setError(err instanceof Error ? err.message : '予約に失敗しました')
       return
     }
+    setLoading(false)
     setStep(4)
   }
 

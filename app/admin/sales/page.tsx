@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import * as store from '@/lib/demo-store'
 
 type SalesData = {
   total: number
@@ -17,9 +18,7 @@ export default function AdminSalesPage() {
 
   const load = async () => {
     setLoading(true)
-    const res = await fetch(`/api/admin/sales?year=${year}&month=${month}`)
-    const json = await res.json()
-    setData(json)
+    setData(store.sales(year, month))
     setLoading(false)
   }
 
