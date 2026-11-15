@@ -1,174 +1,52 @@
-# Principal Nail Salon — 予約管理システム
+# Principal Nail Salon — 予約管理システム（デモ版）
 
-Next.js 16 (App Router) + Prisma 7 + PostgreSQL + NextAuth.js によるネイルサロン予約管理 Web アプリ。
+ネイルサロン向けオンライン予約・管理システムの**ポートフォリオ用デモ**です。
+**バックエンド（DB・認証サーバー・決済・メール）なし**で動作し、データはすべてブラウザの localStorage に保存されます。
+
+- 実際の予約・決済・メール送信は行われません（画面上部にもデモ表示を出しています）
+- 「データを初期化」でいつでも初期状態に戻せます
+- サンプルの顧客・予約はすべて架空のデータです
+
+## デモの使い方
+
+ログイン画面の「デモ用ログイン」から、パスワード入力なしで入れます。
+
+| 入口 | 内容 |
+|---|---|
+| お客様として入る | メニュー選択 → スタッフ → 日時 → 確認 → 予約完了、マイページでの確認・キャンセル |
+| 管理画面に入る | ダッシュボード、予約管理（ステータス変更）、顧客管理、スタッフ管理、売上管理 |
+
+通常のフォームからの新規登録・ログインも動きます（登録内容はこのブラウザ内のみ。パスワードはハッシュ化して保存）。
+デモ用アカウント: `test@example.com / test1234`（お客様）、`admin@principal.jp / admin1234`（オーナー）。
 
 ## 技術スタック
 
-| カテゴリ | 採用技術 |
+Next.js 16 (App Router) / React 19 / TypeScript / Tailwind CSS v4
+
+## 構成
+
+| パス | 役割 |
 |---|---|
-| フレームワーク | Next.js 16 (App Router) / TypeScript / Tailwind CSS v4 |
-| ORM | Prisma 7 + `@prisma/adapter-pg` |
-| DB (本番) | Vercel Postgres / Railway / Supabase (PostgreSQL) |
-| 認証 | NextAuth.js v4 (JWT + CredentialsProvider) |
-| 決済 | Stripe |
-| メール | Resend / Nodemailer |
+| `app/` | 画面（トップ・予約・マイページ・ログイン・管理画面5ページ） |
+| `lib/demo-data.ts` | 初期データ（メニュー10件・スタッフ4名・サンプル顧客と予約） |
+| `lib/demo-store.ts` | ブラウザ内データ層（空き枠計算・重複判定・売上集計など、旧APIのロジックを移植） |
+| `lib/demo-session.tsx` | デモ用ログイン状態（旧 NextAuth の代わり） |
+| `docs/original-backend/` | 元の本番版（Prisma + PostgreSQL）のスキーマ・初期SQL（参考） |
 
----
+サンプル予約は「今日」を基準に毎日自動で生成され、定休日（月曜）を除く過去75日〜未来14日分が入ります。
+ユーザー自身が作った予約・登録は、日付が変わっても残ります。
 
-## ローカル開発
+## 元の構成について
 
-### 1. 依存パッケージのインストール
+本番版は Next.js + Prisma 7 + PostgreSQL（Supabase）+ NextAuth + Stripe + Resend で構成していました。
+無料枠の都合でバックエンドを停止し、見た目と操作感はそのままに、データ層だけをブラウザ内に置き換えたのがこのデモ版です。
+本番版のコードは git 履歴（`main` ブランチ）に残っています。
+
+## ローカル起動
 
 ```bash
 npm install
-```
-
-### 2. 環境変数の設定
-
-`.env.example` をコピーして `.env.local` を作成し、各値を設定します。
-
-```bash
-cp .env.example .env.local
-```
-
-| 変数名 | 説明 |
-|---|---|
-| `NEXTAUTH_SECRET` | `openssl rand -base64 32` で生成したランダム文字列 |
-| `NEXTAUTH_URL` | ローカル: `http://localhost:3000` |
-| `DATABASE_URL` | PostgreSQL 接続文字列（下記参照） |
-| `STRIPE_SECRET_KEY` | Stripe シークレットキー（`sk_test_...`） |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe 公開キー（`pk_test_...`） |
-| `STRIPE_WEBHOOK_SECRET` | Stripe Webhook シークレット（`whsec_...`） |
-| `RESEND_API_KEY` | Resend API キー（`re_...`） |
-
-> **PostgreSQL の準備**
-> 以下のいずれかを使用できます（いずれも無料枠あり）。
-> - [Railway](https://railway.app/) — DB 作成後に接続文字列をコピー
-> - [Supabase](https://supabase.com/) — Project Settings → Database → Connection string
-> - [Neon](https://neon.tech/) — サーバーレス PostgreSQL
-> - ローカル Docker: `docker run -e POSTGRES_PASSWORD=password -p 5432:5432 postgres`
-
-### 3. データベースのセットアップ
-
-```bash
-# マイグレーション実行
-npx prisma migrate dev --name init
-
-# 初期データ投入（スタッフ4名・メニュー10件・管理者アカウント）
-npm run seed
-```
-
-### 4. 開発サーバー起動
-
-```bash
 npm run dev
-# → http://localhost:3000
 ```
 
-#### テストアカウント
-
-| ロール | メール | パスワード |
-|---|---|---|
-| オーナー（管理者） | admin@principal.jp | admin1234 |
-| 一般ユーザー | test@example.com | test1234 |
-
----
-
-## Vercel へのデプロイ
-
-### 1. GitHub リポジトリを作成して push
-
-```bash
-git init
-git add .
-git commit -m "initial commit"
-git remote add origin https://github.com/<your-org>/<repo>.git
-git push -u origin main
-```
-
-### 2. Vercel でプロジェクトをインポート
-
-[vercel.com/new](https://vercel.com/new) でリポジトリをインポートします。
-Framework Preset は **Next.js** を選択（自動検出されます）。
-
-### 3. 環境変数を設定
-
-Vercel ダッシュボード → **Settings → Environment Variables** に以下を追加：
-
-| 変数名 | 備考 |
-|---|---|
-| `DATABASE_URL` | Vercel Postgres または Railway の接続文字列 |
-| `NEXTAUTH_SECRET` | `openssl rand -base64 32` の出力 |
-| `NEXTAUTH_URL` | `https://your-app.vercel.app` |
-| `STRIPE_SECRET_KEY` | Stripe 本番シークレットキー |
-| `STRIPE_PUBLISHABLE_KEY` | Stripe 本番公開キー |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | 同上（`NEXT_PUBLIC_` プレフィックス付き） |
-| `STRIPE_WEBHOOK_SECRET` | Stripe Webhook シークレット |
-| `RESEND_API_KEY` | Resend API キー |
-
-#### Vercel Postgres を使う場合
-
-Vercel ダッシュボード → **Storage → Create Database → Postgres** で DB を作成すると、
-`DATABASE_URL` などの環境変数がプロジェクトに自動連携されます。
-
-### 4. デプロイ後のマイグレーション
-
-初回デプロイ後、ローカルから本番 DB にマイグレーションを実行します。
-
-```bash
-# Vercel CLI でローカルに本番環境変数を取得
-npx vercel env pull .env.production.local
-
-# マイグレーション実行
-DATABASE_URL="<本番のDATABASE_URL>" npx prisma migrate deploy
-
-# 初期データ投入（初回のみ）
-DATABASE_URL="<本番のDATABASE_URL>" npm run seed
-```
-
-### 5. Stripe Webhook の設定
-
-Stripe ダッシュボード → **Developers → Webhooks → エンドポイントを追加**
-
-- URL: `https://your-app.vercel.app/api/stripe/webhook`
-- リッスンするイベント: `payment_intent.succeeded`
-- 生成されたシークレットを `STRIPE_WEBHOOK_SECRET` に設定
-
----
-
-## ページ一覧
-
-| パス | 説明 | 認証 |
-|---|---|---|
-| `/` | トップページ（メニュー・スタッフ紹介） | 不要 |
-| `/auth` | ログイン / 新規登録 | 不要 |
-| `/booking` | 予約フロー（5ステップ） | 必要 |
-| `/mypage` | 予約履歴・キャンセル | 必要 |
-| `/admin` | 管理ダッシュボード | STAFF / OWNER |
-| `/admin/bookings` | 予約管理（日付フィルタ・ステータス変更） | STAFF / OWNER |
-| `/admin/customers` | 顧客管理（検索） | STAFF / OWNER |
-| `/admin/staff` | スタッフ管理（編集） | OWNER |
-| `/admin/sales` | 売上集計（月別・スタッフ別） | STAFF / OWNER |
-
-## ディレクトリ構成
-
-```
-principal-booking/
-├── app/
-│   ├── page.tsx              # トップページ
-│   ├── auth/page.tsx         # ログイン / 新規登録
-│   ├── booking/page.tsx      # 予約フロー
-│   ├── mypage/page.tsx       # マイページ
-│   └── admin/               # 管理画面（要認証）
-├── lib/
-│   ├── prisma.ts             # Prisma クライアント
-│   └── auth.ts               # NextAuth 設定
-├── prisma/
-│   ├── schema.prisma         # DB スキーマ
-│   ├── migrations/           # マイグレーション
-│   └── seed.ts               # 初期データ
-├── types/
-│   └── next-auth.d.ts        # NextAuth 型拡張
-├── .env.example              # 環境変数テンプレート
-└── vercel.json               # Vercel ビルド設定
-```
+環境変数・DB の設定は不要です。

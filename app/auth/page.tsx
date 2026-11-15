@@ -1,12 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { signIn } from 'next-auth/react'
+import { useDemoSession } from '@/lib/demo-session'
+import { DEMO_ADMIN, DEMO_CUSTOMER } from '@/lib/demo-data'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
 export default function AuthPage() {
   const router = useRouter()
+  const { login, register } = useDemoSession()
   const [mode, setMode] = useState<'login' | 'register'>('login')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -28,36 +30,34 @@ export default function AuthPage() {
     e.preventDefault()
     setError('')
     setLoading(true)
-    const res = await signIn('credentials', {
-      email: form.email,
-      password: form.password,
-      redirect: false,
-    })
+    const ok = await login(form.email, form.password)
     setLoading(false)
-    if (res?.error) {
+    if (!ok) {
       setError('メールアドレスまたはパスワードが正しくありません')
     } else {
       router.push('/mypage')
     }
   }
 
+  const quickLogin = async (account: { email: string; password: string }, to: string) => {
+    setError('')
+    setLoading(true)
+    const ok = await login(account.email, account.password)
+    setLoading(false)
+    if (ok) router.push(to)
+  }
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setLoading(true)
-    const res = await fetch('/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    })
-    if (!res.ok) {
-      const data = await res.json()
-      setError(data.error ?? '登録に失敗しました')
+    try {
+      await register(form) // 登録と同時にログイン
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '登録に失敗しました')
       setLoading(false)
       return
     }
-    // Auto-login after register
-    await signIn('credentials', { email: form.email, password: form.password, redirect: false })
     setLoading(false)
     router.push('/mypage')
   }
@@ -68,6 +68,32 @@ export default function AuthPage() {
         <Link href="/" className="block text-center text-xl font-bold tracking-widest text-rose-800 mb-8">
           PRINCIPAL
         </Link>
+
+        {/* Demo quick login */}
+        <div className="mb-6 rounded-xl border border-rose-100 bg-rose-50/60 p-4">
+          <p className="text-xs font-semibold text-rose-700 mb-1">デモ用ログイン</p>
+          <p className="text-xs text-stone-500 mb-3">
+            パスワード入力なしで、お客様画面・管理画面の両方をお試しいただけます。
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              disabled={loading}
+              onClick={() => quickLogin(DEMO_CUSTOMER, '/mypage')}
+              className="bg-white border border-rose-200 text-rose-700 text-sm py-2 rounded-full hover:bg-rose-50 disabled:opacity-60"
+            >
+              お客様として入る
+            </button>
+            <button
+              type="button"
+              disabled={loading}
+              onClick={() => quickLogin(DEMO_ADMIN, '/admin')}
+              className="bg-stone-800 text-white text-sm py-2 rounded-full hover:bg-stone-900 disabled:opacity-60"
+            >
+              管理画面に入る
+            </button>
+          </div>
+        </div>
 
         {/* Toggle */}
         <div className="flex rounded-full bg-stone-100 p-1 mb-8">

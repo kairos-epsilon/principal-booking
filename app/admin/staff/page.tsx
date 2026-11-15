@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import * as store from '@/lib/demo-store'
 
 type Staff = {
   id: string
@@ -15,20 +16,16 @@ export default function AdminStaffPage() {
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState<Staff | null>(null)
 
-  const load = () =>
-    fetch('/api/admin/staff')
-      .then((r) => r.json())
-      .then((data) => { setStaff(Array.isArray(data) ? data : []); setLoading(false) })
+  const load = () => {
+    setStaff(store.adminStaff())
+    setLoading(false)
+  }
 
   useEffect(() => { load() }, [])
 
   const handleSave = async () => {
     if (!editing) return
-    await fetch('/api/admin/staff', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(editing),
-    })
+    store.updateStaff(editing)
     setEditing(null)
     load()
   }
